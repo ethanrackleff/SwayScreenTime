@@ -1,3 +1,4 @@
+Example output for `swaymsg -t get_tree`:
 ```json
 {
   "id": 1,
@@ -557,5 +558,71 @@
   "sticky": false,
   "floating": null,
   "scratchpad_state": null
+}
+```
+Example output for `swaymsg -t subscribe -m '["window"]'`:
+```json
+{
+  "change": "focus",
+  "container": {
+    "id": 10,
+    "type": "con",
+    "orientation": "none",
+    "percent": 1.0,
+    "urgent": false,
+    "marks": [],
+    "focused": true,
+    "layout": "none",
+    "border": "pixel",
+    "current_border_width": 2,
+    "rect": {
+      "x": 20,
+      "y": 55,
+      "width": 1880,
+      "height": 1005
+    },
+    "deco_rect": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0
+    },
+    "window_rect": {
+      "x": 2,
+      "y": 2,
+      "width": 1876,
+      "height": 1001
+    },
+    "geometry": {
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": 600
+    },
+    "name": "erackleff@erackleff:~\/dev\/sway-screen-time",
+    "window": null,
+    "nodes": [],
+    "floating_nodes": [],
+    "focus": [],
+    "fullscreen_mode": 0,
+    "sticky": false,
+    "floating": "auto_off",
+    "scratchpad_state": "none",
+    "pid": 1671,
+    "app_id": "Alacritty",
+    "foreign_toplevel_identifier": "2feb199f1d8d71f51b9e96326e22c8d1",
+    "visible": true,
+    "max_render_time": 0,
+    "allow_tearing": false,
+    "shell": "xdg_shell",
+    "inhibit_idle": false,
+    "sandbox_engine": null,
+    "sandbox_app_id": null,
+    "sandbox_instance_id": null,
+    "idle_inhibitors": {
+      "user": "none",
+      "application": "none"
+    }
+  }
 }
 ```
