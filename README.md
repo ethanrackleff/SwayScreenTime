@@ -6,7 +6,7 @@ Both of these commands output JSON text in the terminal. We will convert this JS
 
 ### Functions
 * [x] `std::string run_read_cmd(const std::string& cmd)` Runs a terminal command and returns the output of the command in a string. Used for getting the [relevant commands](#cmds) output.
-* [ ] `std::string initial_focus(const nlohmann::json& node)` Finds the window currently focused on start up.
+* [x] `std::string initial_focus(const nlohmann::json& node)` Finds the window currently focused on start up.
 * [ ] `std::string change_focus(const nlohmann::json& node)` Determines if a window has changed focus.
 * [ ] `std::string initial_app_id(const nlohmann::json& node)` Gets application name on start uponce the initial focus window is found.
 * [ ] `std::string change_app_id(const nlohman::json& node)` Gets application name if focused window updates.
