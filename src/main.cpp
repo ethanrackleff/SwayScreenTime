@@ -4,10 +4,27 @@
 #include <iostream>
 #include <stdlib.h>
 #include <fstream>
+#include <atomic> //for runProgram boolean
 
 using json = nlohmann::json;
 using string = std::string;
-bool runProgram = true;
+//bool runProgram = true;
+std::atomic<bool> runProgram(false);
+
+/*
+struct timeMap {
+    string app;
+    int ms;
+    int s;
+    int m;
+    int h;
+    std::unordered_map map;
+
+    void log(const& string app_id, int ms){ 
+    
+    }
+}
+*/
 
 struct Session {
 
@@ -56,8 +73,8 @@ string run_read_cmd(const string& cmd) {
 string run_Session(const string& cmd, string initApp) {
     Session sess;
     string currApp = initApp;
-
-    while (runProgram) { //make a global flag here for when the program runs and stops.
+    bool current_runProgram = runProgram.load();
+    while (current_runProgram) { //make a global flag here for when the program runs and stops.
         sess.start_now(currApp);
         char buffer[8000];
         FILE* pipe = popen(cmd.c_str(), "r");
@@ -66,7 +83,9 @@ string run_Session(const string& cmd, string initApp) {
         }
         json json_buffer;
 
-        while ((fgets(buffer,sizeof(buffer), pipe) != NULL) && sess.active && runProgram) {
+        while ((fgets(buffer,sizeof(buffer), pipe) != NULL) && sess.active && current_runProgram) {
+            current_runProgram = runProgram.load();
+            
             std::cout << buffer << "\n";
             std::cout << "New Buffer\n";
 
@@ -120,21 +139,20 @@ int main() {
     string initApp = initial_focus(json_init_output);
     //std::cout << initApp;
     
-
+    
+    runProgram.store(true);
     run_Session("swaymsg -t subscribe -m '[\"window\"]'", initApp);
 
     //run program for length of duration
-    /*auto start = std::chrono::steady_clock::now();
+    auto start = std::chrono::steady_clock::now();
     auto duration = std::chrono::seconds(10);
-    runProgram = true;
     while (runProgram) {
         if (std::chrono::steady_clock::now() - start >= duration) {
-            runProgram = false;
+            runProgram.store(false);
             std::cout << "The program should be stopping !" << std::endl;
+            break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    */
 
     return 0;
 }
