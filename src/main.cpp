@@ -5,57 +5,47 @@
 #include <stdlib.h>
 #include <fstream>
 #include <atomic> //for runProgram boolean
+#include <sqlite3.h>
+#include <ctime>
+#include <thread>
+#include <string>
 
 using json = nlohmann::json;
 using string = std::string;
-//bool runProgram = true;
+using s_clock = std::chrono::steady_clock;
+
 std::atomic<bool> runProgram(false);
-
-/*
-struct timeMap {
-    string app;
-    int ms;
-    int s;
-    int m;
-    int h;
-    std::unordered_map map;
-
-    void log(const& string app_id, int ms){ 
-    
-    }
-}
-*/
 
 struct Session {
 
-    using clock = std::chrono::steady_clock;
     string app_id;
-    clock::time_point start{};
-    clock::time_point end{};
+    s_clock::time_point startTime{};
+    s_clock::time_point endTime{};
+    time_t startCalendar;
+    time_t endCalendar;
     bool active = false;
+    std::chrono::milliseconds ms_Ellapsed;
 
     void start_now(string app) {
         app_id = app;
-        start = clock::now();
+        startTime = s_clock::now();
         active = true;
+        time(&startCalendar);
     }
 
-    int stop_now() {
-        int output = 0;
+    void stop_now() {
         if (!active) {
-            return 0;
+            return;
         }
-        end = clock::now();
-        auto ms_Elapsed = std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count();
-        std::cout << "app_id = " << app_id << " ms elapsed = " << ms_Elapsed << "\n";
+
+        endTime = s_clock::now();
+        time(&endCalendar);
+        ms_Ellapsed = std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime);
         active = false;
-        output = int(ms_Elapsed);
-        std::cout << "In stop_now(). Here is output: " << output << "\n";
-        return 0;
+
+        std::cout << "app_id = " << app_id << " ms elapsed = " << ms_Ellapsed.count() << "\n" << std::endl;
     }
 };
-
-
 
 string run_read_cmd(const string& cmd) {
     char buffer[128]; //temporarily hold characters from command output
@@ -70,10 +60,13 @@ string run_read_cmd(const string& cmd) {
     return output;
 }
 
-string run_Session(const string& cmd, string initApp) {
+string run_Session(const string& cmd, string initApp, sqlite3* DB, int id) {
     Session sess;
     string currApp = initApp;
     bool current_runProgram = runProgram.load();
+    string sql;
+
+     
     while (current_runProgram) { //make a global flag here for when the program runs and stops.
         sess.start_now(currApp);
         char buffer[8000];
@@ -82,19 +75,30 @@ string run_Session(const string& cmd, string initApp) {
             return "popen failed";
         }
         json json_buffer;
+        char* msgErr;
 
         while ((fgets(buffer,sizeof(buffer), pipe) != NULL) && sess.active && current_runProgram) {
             current_runProgram = runProgram.load();
             
-            std::cout << buffer << "\n";
-            std::cout << "New Buffer\n";
+            std::cout << buffer << "\n" << std::endl;
+            std::cout << "New Buffer\n" << std::endl;
 
             //maybe put this code into its own function to read swaymsg -t subscribe -m command output
             json_buffer = json::parse(buffer);
             if (json_buffer["change"] == "focus") {
-                std::cout << json_buffer["container"]["app_id"].template get<string>() << "\n";
+                std::cout << json_buffer["container"]["app_id"].template get<string>() << "\n" << std::endl;
                 currApp = json_buffer["container"]["app_id"].template get<string>();            
                 sess.stop_now();
+                
+                sql = "INSERT INTO SESSION VALUES(" 
+                        + std::to_string(id) + ", '" 
+                        + sess.app_id + "', " 
+                        + std::to_string(sess.startCalendar) + ", " 
+                        + std::to_string(sess.endCalendar) + ", " 
+                        + std::to_string(sess.ms_Ellapsed.count()) + ");";
+                //sql = "INSERT INTO SESSION VALUES(" + std::to_string(id) +"\'" + std::to_string(sess.app_id) + "\', \'" + std::to_string(sess.startCalendar) + "\', \'" + std::to_string(sess.stopCalendar) + "\', " + std::to_string(sess.msElapsed) + ");" ;
+                id++;
+                sqlite3_exec(DB, sql.c_str(), NULL, 0, &msgErr);
             }
         }
         pclose(pipe);
@@ -103,7 +107,8 @@ string run_Session(const string& cmd, string initApp) {
 }
 
 
-//make this function recursive eventually
+/***make this function recursive eventually***/
+//Finds focused window on startup
 string initial_focus(const json& root) {
     if (root["type"] == "root") {
         std::cout << "In root\n";
@@ -132,27 +137,55 @@ string initial_focus(const json& root) {
     return "Couldn't find focused window";
 }
 
-int main() {
-    //Get currently focused window.
-    string initOutput = run_read_cmd("swaymsg -t get_tree");
-    json json_init_output = json::parse(initOutput);
-    string initApp = initial_focus(json_init_output);
-    //std::cout << initApp;
-    
-    
-    runProgram.store(true);
-    run_Session("swaymsg -t subscribe -m '[\"window\"]'", initApp);
-
-    //run program for length of duration
-    auto start = std::chrono::steady_clock::now();
+void kill() {
+    s_clock::time_point start = s_clock::now();
+    s_clock::time_point currTime = s_clock::now();
     auto duration = std::chrono::seconds(10);
-    while (runProgram) {
-        if (std::chrono::steady_clock::now() - start >= duration) {
+
+    while (runProgram.load()) {
+        currTime = s_clock::now();
+        if ((std::chrono::duration_cast<std::chrono::seconds> (currTime - start)) >= duration) {
             runProgram.store(false);
             std::cout << "The program should be stopping !" << std::endl;
             break;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+}
+
+int main() {
+
+    sqlite3* DB;
+
+    string sql = "CREATE TABLE SESSION("
+                 "ID INT PRIMARY KEY         NOT NULL,"
+                 "APP            TEXT        NOT NULL,"
+                 "START          INTEGER   NOT NULL,"
+                 "END            INTEGER   ," 
+                 "MSELAPSED      INTEGER    );";
+    int exit = 0;
+    exit = sqlite3_open("example.db", &DB);
+    char* msgErr;
+    exit = sqlite3_exec(DB, sql.c_str(), NULL, 0, &msgErr);
+
+    if (exit != SQLITE_OK) {
+        std::cout << "Error creating table" << std::endl;
+        sqlite3_free(msgErr);
+        return -1;
+    }
+    std::cout << "Table Created" << std::endl;
+
+    //Get currently focused window.
+    string initOutput = run_read_cmd("swaymsg -t get_tree");
+    json json_init_output = json::parse(initOutput);
+    string initApp = initial_focus(json_init_output);
+    
+    runProgram.store(true);
+    std::thread killer {kill};
+    run_Session("swaymsg -t subscribe -m '[\"window\"]'", initApp, DB, 0);
+    killer.join();
+    sqlite3_close(DB);
+    
 
     return 0;
 }
