@@ -13,6 +13,19 @@ class AppDataManager;
 
 class Sessiontracker {
 private:
+    
+    AppDataManager* dataManager;
+    Session currentSession;
+    std::atomic<bool> isRunning;
+
+    std::string runReadCommand(const std::string& cmd);
+    std::string findInitialFocus(const nlohmann::json& root);
+
+    void monitorLoop();
+
+    std::thread monitorThread;
+
+public:
     //A session represents an instance of time spent on app. We
     //We store the start and end time
     //We use functions to start a session and stop a session
@@ -29,18 +42,6 @@ private:
         void stop_now();
     };
 
-    AppDataManager* dataManager;
-    Session currentSession;
-    std::atomic<bool> isRunning;
-
-    std::string runReadCommand(const std::string& cmd);
-    std::string findInitialFocus(const nlohmann::json& root);
-
-    void monitorLoop();
-
-    std::thread monitorThread;
-
-public:
     SessionTracker(AppDataManager* dataManager);
     ~SessionTracker();
     
