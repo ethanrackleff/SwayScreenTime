@@ -6,13 +6,6 @@
 #include <map>
 #include <sqlite3.h>
 
-struct AppUsageData {
-    std::string appName;
-    long long dailyUsageMs;
-    long long dailyLimitMs;
-    bool blockingEnabled;
-    long long currentSessionMs;
-};
 
 class AppMonitor {
 private:
@@ -27,11 +20,6 @@ private:
     int graphHeight, graphWidth;
     int blockHeight, blockWidth;
     int statusHeight, statusWidth;
-
-    // Data storage
-    std::map<std::string, AppUsageData> appData;
-    std::vector<std::string> appList;
-    sqlite3* database;
 
     // UI state
     int selectedAppIndex;
@@ -69,7 +57,6 @@ public:
     // Data management
     void loadAppData();
     void refreshAppData();
-    void updateCurrentSession(const std::string& appName, long long sessionTimeMs);
 
     // Display functions
     void draw();
@@ -95,13 +82,8 @@ public:
     std::string formatTimeRemaining(long long usedMs, long long limitMs);
     void showMessage(const std::string& message);
 
-    // Database operations
-    void updateAppLimit(const std::string& appName, long long limitMs, bool enabled);
-    void insertUsageSession(const std::string& appName, long long startTime, long long endTime, long long durationMs);
-
     // Getters
     bool isAppBlocked(const std::string& appName);
-    long long getAppRemainingTime(const std::string& appName);
     std::string getCurrentFocusedApp() const;
 };
 

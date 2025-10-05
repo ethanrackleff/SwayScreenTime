@@ -19,6 +19,7 @@ using s_clock = std::chrono::steady_clock;
 
 std::atomic<bool> runProgram(false);
 
+/*
 struct Session {
     string app_id;
     s_clock::time_point startTime{};
@@ -48,7 +49,7 @@ struct Session {
         //std::cout << "app_id = " << app_id << " ms elapsed = " << ms_Ellapsed.count() << "\n" << std::endl;
     }
 };
-
+*/
 string run_read_cmd(const string& cmd) {
     char buffer[128]; //temporarily hold characters from command output
    string output = "";
