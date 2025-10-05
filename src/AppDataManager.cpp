@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <chrono>
+#include <vector>
 
 AppDataManager::AppDataManager(const std::string& databasePath)
     : dbPath(databasePath) {
@@ -62,3 +63,38 @@ void AppDataManager::saveSession(const SessionTracker::Session& session) {
         throw std::runtime_error("Failed to save session to database");
     }
 }
+
+std::vector<AppUsageData> getTodaysUsage() {
+    std::vector<AppUsageData> usageData;
+    std::string getUsageByAppSQL = 
+        "SELECT APP, SUM(MSELAPSED) AS dailyUsage"
+        "FROM SESSIONS"
+        "WHERE START >= strftime('%s', date('now', 'start of day'))"
+        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) 
+        "GROUP BY APP;"
+    sqlite3_stmt* stmt;
+
+    int result = sqlite3_prepare_v2(database, getUsageByAppSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getTodaysUsage query");
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        AppUsageData appData;
+        
+        const char* appName = (const char*)sqlite3_column_text(stmt, 0);
+        long long dailyUsageMs = sqlite3_column_int64(stmt, 1);
+
+        appData.appName = std::string(appName);
+        appData.dailyUsageMs = dailyUsageMs;
+        appData.currentSessionMs = 0;
+
+        usageData.push_back(appData);
+    }
+    sqlite3_finalize(stmt);
+
+    return usageData;
+}
+
+
+

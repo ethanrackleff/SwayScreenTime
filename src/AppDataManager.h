@@ -20,7 +20,7 @@ private:
 
     //Internal helpers
     void createTables();
-    bool tableExists(const std::string& tableName);
+    //bool tableExists(const std::string& tableName);
 
 public:
     //Constructor/Destructor
