@@ -86,7 +86,7 @@ void AppMonitor::testColors() {
     wattron(graphWindow, COLOR_PAIR(colorPairNormal));
     wattron(blockWindow, COLOR_PAIR(colorPairSelected));
     wattron(statusWindow, COLOR_PAIR(colorPairWarning));
-    mvwprintw(statusWindow, 0, 0, "testColors\(\) working");
+    mvwprintw(statusWindow, 0, 0, "testColors working");
     refreshWindows();
 }
 

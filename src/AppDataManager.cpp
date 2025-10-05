@@ -14,7 +14,12 @@ AppDataManager::AppDataManager(const std::string& databasePath)
 
     createTables();
 }
-
+AppDataManager::~AppDataManager() {
+    if (database) {
+        sqlite3_close(database);
+        database = nullptr;
+    }
+}
 void AppDataManager::createTables() {
     sqlite3* database;
     int result = 0;
@@ -30,10 +35,11 @@ void AppDataManager::createTables() {
     
     std::string createLimitTableSQL = 
         "CREATE TABLE IF NOT EXISTS LIMITS("
-        "APP TEXT PRIMARY KEY,
+        "APP TEXT PRIMARY KEY,"
         "DAILY_LIMIT_MS INTEGER NOT NULL,"
         "ENABLED BOOLEAN NOT NULL DEFAULT 0);";
 
+    result = sqlite3_open(dbPath.c_str(), &database);
     result = sqlite3_exec(database, createSessionTableSQL.c_str(), nullptr, nullptr, &errMsg);
     if (result != SQLITE_OK) {
         sqlite3_free(errMsg);
@@ -64,14 +70,14 @@ void AppDataManager::saveSession(const SessionTracker::Session& session) {
     }
 }
 
-std::vector<AppUsageData> getTodaysUsage() {
+std::vector<AppUsageData> AppDataManager::getTodaysUsage() {
     std::vector<AppUsageData> usageData;
     std::string getUsageByAppSQL = 
-        "SELECT APP, SUM(MSELAPSED) AS dailyUsage"
-        "FROM SESSIONS"
-        "WHERE START >= strftime('%s', date('now', 'start of day'))"
-        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) 
-        "GROUP BY APP;"
+        "SELECT APP, SUM(MSELAPSED) AS dailyUsage "
+        "FROM SESSIONS "
+        "WHERE START >= strftime('%s', date('now', 'start of day')) "
+        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) " 
+        "GROUP BY APP;";
     sqlite3_stmt* stmt;
 
     int result = sqlite3_prepare_v2(database, getUsageByAppSQL.c_str(), -1, &stmt, nullptr);

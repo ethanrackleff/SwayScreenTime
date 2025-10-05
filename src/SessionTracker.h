@@ -11,11 +11,10 @@
 
 class AppDataManager;
 
-class Sessiontracker {
+class SessionTracker {
 private:
     
     AppDataManager* dataManager;
-    Session currentSession;
     std::atomic<bool> isRunning;
 
     std::string runReadCommand(const std::string& cmd);
@@ -31,16 +30,18 @@ public:
     //We use functions to start a session and stop a session
     struct Session {
         std::string app_id;
-        std::chrono::stead_clock::time_point startTime{};
+        std::chrono::steady_clock::time_point startTime{};
         std::chrono::steady_clock::time_point endTime{};
         time_t startCalendar;
         time_t endCalendar;
         bool active = false;
-        std::chrono::milisseconds msElapsed;
+        std::chrono::milliseconds msElapsed;
 
         void start_now(const std::string& app);
         void stop_now();
     };
+
+    Session currentSession;
 
     SessionTracker(AppDataManager* dataManager);
     ~SessionTracker();
@@ -51,5 +52,5 @@ public:
 
     std::string getCurrentApp() const;
     bool isActive() const;
-}
+};
 #endif

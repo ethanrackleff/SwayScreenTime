@@ -9,6 +9,8 @@
 
 class AppMonitor {
 private:
+
+    sqlite3* database;
     // Window management
     WINDOW* graphWindow;
     WINDOW* blockWindow;

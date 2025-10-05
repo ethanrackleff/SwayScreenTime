@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <sqlite3.h>
+#include "SessionTracker.h"
 
 struct AppUsageData {
     std::string appName;
@@ -17,6 +18,7 @@ struct AppUsageData {
 class AppDataManager {
 private:
     sqlite3* database;
+    std::string dbPath;
 
     //Internal helpers
     void createTables();
@@ -36,7 +38,7 @@ public:
     AppUsageData getAppUsage(const std::string& appName);
 
     //App blocking/limits
-    void setAppLimit(const std::string& appName, long long limitMs;
+    void setAppLimit(const std::string& appName, long long limitMs);
     void setAppBlocking(const std::string& appName, bool enabled);
     bool isAppBlocked(const std::string& appName);
     long long getRemainingTime(const std::string& appName);
@@ -49,6 +51,6 @@ public:
     //Database maintenance
     void cleanOldSessions(int daysToKeep = 30);
     bool databaseHealth();
-}
+};
 
 #endif

@@ -22,14 +22,14 @@ int main(int argc, char** argv) {
         std::cout << "Session tracking stopped" << std::endl;
 
         auto todaysUsage = dataManager.getTodaysUsage();
-        std::cout << "\n=== Today's Usage Data ===\n";
+        std::cout << "\n==== Today's Usage Data ====\n";
         for (const auto& app : todaysUsage) {
-            std::cout << "App" << app.appName 
+            std::cout << "App: " << app.appName 
                 << ", Usage: " << app.dailyUsageMs << "ms" << std::endl;
         }
     } 
     catch (const std::exception& e) {
-        std::cout < "Error: " << e.what() << std::endl; 
+        std::cout << "Error: " << e.what() << std::endl; 
         return 1;
     }
     return 0;

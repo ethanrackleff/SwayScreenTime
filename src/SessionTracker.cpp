@@ -109,11 +109,11 @@ void SessionTracker::stopTracking() {
     }
 }
 
-std::string SessionTracker::getCurrentApp() {
+std::string SessionTracker::getCurrentApp() const {
     return currentSession.app_id;
 }
 
-bool SessionTracker::isActive() {
+bool SessionTracker::isActive() const {
     return currentSession.active;
 }
 
@@ -126,8 +126,6 @@ void SessionTracker::monitorLoop() {
             return;
         }
         nlohmann::json json_buffer;
-        char* msgErr;
-        int exit = 0;
         std::string currApp = currentSession.app_id;
 
         while ((fgets(buffer,sizeof(buffer), pipe) != NULL) && isRunning.load()) {
