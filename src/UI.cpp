@@ -1,4 +1,5 @@
 #include "UI.h"
+#include "AppDataManager.h"
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -44,7 +45,6 @@ void AppMonitor::initializeWindows() {
     box(statusWindow, 0, 0);
 
     //titles
-    //
     mvwprintw(graphWindow, 0, 2, "App Usage");
     mvwprintw(blockWindow, 0, 2, "Blockers");
     mvwprintw(statusWindow, 0, 2, "Status");
@@ -90,7 +90,17 @@ void AppMonitor::testColors() {
     refreshWindows();
 }
 
-AppMonitor::AppMonitor(sqlite3* db) : database(db), selectedAppIndex(0), scrollOffset(0), editMode(false) {
+void AppMonitor::draw() {
+    clear();
+
+    drawGraphWindow();
+    drawBlockWindow();
+    drawStatusWindow();
+
+    refreshWindows();
+}
+
+AppMonitor::AppMonitor(AppDataManager dataManager) : dataManager(dataManager), selectedAppIndex(0), scrollOffset(0), editMode(false) {
     maxTime = 0;
     currentFocusedApp = "";
 
@@ -100,9 +110,15 @@ AppMonitor::AppMonitor(sqlite3* db) : database(db), selectedAppIndex(0), scrollO
 }
 
 AppMonitor::~AppMonitor() {
-    if (graphWindow) delwin(graphWindow);
-    if (blockWindow) delwin(blockWindow);
-    if (statusWindow) delwin(statusWindow);
+    if (graphWindow) { 
+        delwin(graphWindow);
+    }
+    if (blockWindow) {
+        delwin(blockWindow);
+    }
+    if (statusWindow) {
+        delwin(statusWindow);
+    }
     endwin();
 }
 

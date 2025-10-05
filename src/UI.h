@@ -5,12 +5,13 @@
 #include <string>
 #include <map>
 #include <sqlite3.h>
+#include "AppDataManager.h"
 
 
 class AppMonitor {
 private:
 
-    sqlite3* database;
+    AppDataManager dataManager;
     // Window management
     WINDOW* graphWindow;
     WINDOW* blockWindow;
@@ -41,7 +42,7 @@ private:
     int maxBarsInGraph;
 
 public:
-    AppMonitor(sqlite3* db);
+    AppMonitor(AppDataManager dataManager);
     ~AppMonitor();
 
     //Testing
