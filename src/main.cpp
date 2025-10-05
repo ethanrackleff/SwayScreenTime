@@ -30,6 +30,13 @@ int main(int argc, char** argv) {
             std::cout << "App: " << app.appName 
                 << ", Usage: " << app.dailyUsageMs << "ms" << std::endl;
         }
+
+        auto allTimeUsage = dataManager.getAllTimeUsage();
+        std::cout << "\n==== All Time Usage Data ====\n";
+        for (const auto& app : allTimeUsage) {
+            std::cout << "App: " << app.appName 
+                << ", Usage: " << app.totalUsageMs << "ms" << std::endl;
+        }
     } 
     catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << std::endl; 

@@ -10,6 +10,7 @@
 struct AppUsageData {
     std::string appName;
     long long dailyUsageMs;
+    long long totalUsageMs;
     long long dailyLimitMs;
     bool blockingEnabled;
     long long currentSessionMs;
@@ -22,7 +23,6 @@ private:
 
     //Internal helpers
     void createTables();
-    //bool tableExists(const std::string& tableName);
 
 public:
     //Constructor/Destructor

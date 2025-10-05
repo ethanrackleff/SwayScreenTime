@@ -93,6 +93,42 @@ std::vector<AppUsageData> AppDataManager::getTodaysUsage() {
 
         appData.appName = std::string(appName);
         appData.dailyUsageMs = dailyUsageMs;
+        appData.totalUsageMs = 0;
+        appData.dailyLimitMs = 0;
+        appData.blockingEnabled = false;
+        appData.currentSessionMs = 0;
+
+        usageData.push_back(appData);
+    }
+    sqlite3_finalize(stmt);
+
+    return usageData;
+}
+
+std::vector<AppUsageData> AppDataManager::getAllTimeUsage() {
+    std::vector<AppUsageData> usageData;
+    std::string getUsageByAppSQL = 
+        "SELECT APP, SUM(MSELAPSED) AS totalUsage "
+        "FROM SESSIONS "
+        "GROUP BY APP;";
+    sqlite3_stmt* stmt;
+
+    int result = sqlite3_prepare_v2(database, getUsageByAppSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getAllTimeUsage query");
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        AppUsageData appData;
+        
+        const char* appName = (const char*)sqlite3_column_text(stmt, 0);
+        long long totalUsageMs = sqlite3_column_int64(stmt, 1);
+
+        appData.appName = std::string(appName);
+        appData.dailyUsageMs = 0;
+        appData.totalUsageMs = totalUsageMs;
+        appData.dailyLimitMs = 0;
+        appData.blockingEnabled = false;
         appData.currentSessionMs = 0;
 
         usageData.push_back(appData);
