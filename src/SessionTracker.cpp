@@ -34,7 +34,7 @@ void SessionTracker::Session::stop_now() {
 
         endTime = std::chrono::steady_clock::now();
         time(&endCalendar);
-        ms_Ellapsed = std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime);
+        msElapsed = std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime);
         active = false;
         
         //test message

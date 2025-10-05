@@ -36,7 +36,7 @@ public:
         time_t startCalendar;
         time_t endCalendar;
         bool active = false;
-        std::chrono::milisseconds ms_Elapsed;
+        std::chrono::milisseconds msElapsed;
 
         void start_now(const std::string& app);
         void stop_now();
