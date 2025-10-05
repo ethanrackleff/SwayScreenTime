@@ -37,8 +37,6 @@ void SessionTracker::Session::stop_now() {
         msElapsed = std::chrono::duration_cast<std::chrono::milliseconds> (endTime - startTime);
         active = false;
         
-        //test message
-        //std::cout << "app_id = " << app_id << " ms elapsed = " << ms_Ellapsed.count() << "\n" << std::endl;
     }
 
 std::string SessionTracker::runReadCommand(const std::string& cmd) {
@@ -100,13 +98,15 @@ void SessionTracker::startTracking() {
 }
 
 void SessionTracker::stopTracking() {
+    if (currentSession.active) {
+        currentSession.stop_now();
+        dataManager->saveSession(currentSession);
+    }
+
     isRunning.store(false);
     if (monitorThread.joinable()) {
         monitorThread.join();
     }
-    currentSession.stop_now();
-    //append data to AppDataManager
-
 }
 
 std::string SessionTracker::getCurrentApp() {
@@ -136,7 +136,8 @@ void SessionTracker::monitorLoop() {
             json_buffer = nlohmann::json::parse(buffer);
             if (json_buffer["change"] == "focus") {
                 currentSession.stop_now();
-                
+                dataManager->saveSession(currentSession);                 
+
                 currApp = json_buffer["container"]["app_id"].template get<std::string>();            
                 //!append currentSession to AppDataManager
                 currentSession.start_now(currApp);
