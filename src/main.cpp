@@ -6,6 +6,9 @@
 #include <chrono>
 
 int main(int argc, char** argv) {
+
+    //CLI Version
+
     try {
         AppDataManager dataManager("example.db");
         std::cout << "Database initialized successfully" << std::endl;
@@ -32,5 +35,8 @@ int main(int argc, char** argv) {
         std::cout << "Error: " << e.what() << std::endl; 
         return 1;
     }
+
+    //TUI Version
+
     return 0;
 }
