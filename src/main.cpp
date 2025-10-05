@@ -8,6 +8,9 @@
 int main(int argc, char** argv) {
 
     //CLI Version
+    //sst -> sway screen time 
+    //sst help 
+    //cli(argc, argv);
 
     try {
         AppDataManager dataManager("example.db");
@@ -19,7 +22,7 @@ int main(int argc, char** argv) {
         tracker.startTracking();
         std::cout << "Session tracking started" << std::endl;
 
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        //std::this_thread::sleep_for(std::chrono::seconds(10));
 
         tracker.stopTracking();
         std::cout << "Session tracking stopped" << std::endl;
@@ -36,6 +39,17 @@ int main(int argc, char** argv) {
         for (const auto& app : allTimeUsage) {
             std::cout << "App: " << app.appName 
                 << ", Usage: " << app.totalUsageMs << "ms" << std::endl;
+        }
+
+        long long totalMsToday = dataManager.getTotalUsageToday();
+        std::cout << "\n==== Total Screen Time Today ====" << std::endl;
+        std::cout << totalMsToday << "ms" << std::endl;
+
+        auto todaysUsagePercentMap= dataManager.getUsageTodayPercentage();
+        std::cout <<"\n=== Today's Usage Data Percentage ===\n";
+        for (const auto& [app, percent] : todaysUsagePercentMap) {
+            std::cout << "App: " << app
+                << ", Usage: " << percent << "%" << std::endl;
         }
     } 
     catch (const std::exception& e) {

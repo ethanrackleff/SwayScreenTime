@@ -37,7 +37,7 @@ public:
     std::vector<AppUsageData> getAllTimeUsage();
     AppUsageData getAppUsage(const std::string& appName);
 
-    //App blocking/limits
+    //Implement Later: App blocking/limits
     void setAppLimit(const std::string& appName, long long limitMs);
     void setAppBlocking(const std::string& appName, bool enabled);
     bool isAppBlocked(const std::string& appName);
@@ -46,7 +46,7 @@ public:
     //Statistics
     long long getTotalUsageToday();
     std::string getMostUsedAppToday();
-    std::map<std::string, long long> getUsageBreakdown();
+    std::map<std::string, long long> getUsageTodayPercentage();
 
     //Database maintenance
     void cleanOldSessions(int daysToKeep = 30);

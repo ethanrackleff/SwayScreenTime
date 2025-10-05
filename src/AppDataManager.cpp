@@ -128,7 +128,7 @@ std::vector<AppUsageData> AppDataManager::getAllTimeUsage() {
         appData.dailyUsageMs = 0;
         appData.totalUsageMs = totalUsageMs;
         appData.dailyLimitMs = 0;
-        appData.blockingEnabled = false;
+        appData.blockingEnabled =  false;
         appData.currentSessionMs = 0;
 
         usageData.push_back(appData);
@@ -138,5 +138,44 @@ std::vector<AppUsageData> AppDataManager::getAllTimeUsage() {
     return usageData;
 }
 
+long long AppDataManager::getTotalUsageToday() {
+    std::string getTotalUsageSQL = 
+        "SELECT SUM(MSELAPSED) as totalUsage "
+        "FROM SESSIONS "
+        "WHERE START >= strftime('%s', date('now', 'start of day')) "
+        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) ";
+    sqlite3_stmt* stmt;
+    long long totalUsageMs = -1;
 
+    int result = sqlite3_prepare_v2(database, getTotalUsageSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getTodaysUsage query");
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+       totalUsageMs = sqlite3_column_int64(stmt, 0); 
+       return totalUsageMs;
+    }
+    else {
+        throw std::runtime_error("Failed to get totalUsageMs");
+    }
+}
+
+std::map<std::string, long long> AppDataManager::getUsageTodayPercentage() {
+    auto appData = getTodaysUsage(); 
+    long long totalUsageTodayMs = getTotalUsageToday();
+    std::map<std::string, long long> appToPercentMap;
+    long long percent;
+    if (totalUsageTodayMs != 0) {
+        for (auto& app : appData) {
+        percent = (static_cast<double>(app.dailyUsageMs) / totalUsageTodayMs) * 100;
+        appToPercentMap[app.appName] = percent;
+        }
+    }
+    else {
+        throw std::runtime_error("Division by 0 in getUsageTodayPercentage");
+    }
+    
+    return appToPercentMap;
+}
 
