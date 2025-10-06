@@ -179,3 +179,4 @@ std::map<std::string, long long> AppDataManager::getUsageTodayPercentage() {
     return appToPercentMap;
 }
 
+

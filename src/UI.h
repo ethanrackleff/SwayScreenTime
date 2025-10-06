@@ -11,7 +11,7 @@
 class AppMonitor {
 private:
 
-    AppDataManager dataManager;
+    AppDataManager* dataManager;
     // Window management
     WINDOW* graphWindow;
     WINDOW* blockWindow;
@@ -42,7 +42,7 @@ private:
     int maxBarsInGraph;
 
 public:
-    AppMonitor(AppDataManager dataManager);
+    AppMonitor(AppDataManager* dataManager);
     ~AppMonitor();
 
     //Testing
@@ -56,7 +56,6 @@ public:
 
     void refreshWindows();
 
-
     // Data management
     void loadAppData();
     void refreshAppData();
@@ -64,6 +63,8 @@ public:
     // Display functions
     void draw();
     void drawGraphWindow();
+    //Graph headers
+    std::string formatDailyTime(long long elapsedMs);
     void drawBlockWindow();
     void drawStatusWindow();
     void drawAppUsageGraph(const std::string& appName, int startY, int startX, int width, int height);

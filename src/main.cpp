@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     //sst help 
     //cli(argc, argv);
     
-    /*
+    /* 
     try {
         AppDataManager dataManager("example.db");
         std::cout << "Database initialized successfully" << std::endl;
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
         std::cout << "Session tracking started" << std::endl;
         
         //Use to run monitor screen time for 10 seconds
-        //std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
 
         tracker.stopTracking();
         std::cout << "Session tracking stopped" << std::endl;
@@ -58,13 +58,17 @@ int main(int argc, char** argv) {
         std::cout << "Error: " << e.what() << std::endl; 
         return 1;
     }
-    */
+    */ 
 
     //TUI Version
     AppDataManager dataManager("example.db");
     std::cout << "Database initialized successfully" << std::endl;
+    
+     auto testUsage = dataManager.getTodaysUsage();
+    std::cout << "Test: Found" << testUsage.size() << " apps in main()" << std::endl;
 
-    AppMonitor monitor(dataManager);
+    AppMonitor monitor(&dataManager);
+    monitor.draw();
     nodelay(stdscr, FALSE);
     getch();
 

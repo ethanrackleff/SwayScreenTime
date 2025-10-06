@@ -36,6 +36,7 @@ public:
     std::vector<AppUsageData> getTodaysUsage();
     std::vector<AppUsageData> getAllTimeUsage();
     AppUsageData getAppUsage(const std::string& appName);
+    std::string formatDailyTime(long long elapsedMs);
 
     //Implement Later: App blocking/limits
     void setAppLimit(const std::string& appName, long long limitMs);

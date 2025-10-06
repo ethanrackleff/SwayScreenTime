@@ -90,17 +90,51 @@ void AppMonitor::testColors() {
     refreshWindows();
 }
 
+std::string AppMonitor::formatDailyTime(long long elapsedMs) {
+    long long seconds;
+    long long minutes;
+    long long hours;
+    std::string output = "";
+ 
+    seconds = (elapsedMs / 1000);
+    minutes = (seconds / 60) % 60;
+    hours = (minutes / 60);
+    seconds %= 60000;
+    
+    output = std::to_string(hours) + "h, " + std::to_string(minutes) + "m, " + std::to_string(seconds) + "s";
+    return output;
+}
+
+void AppMonitor::drawGraphWindow() {
+    auto todaysUsage = dataManager->getTodaysUsage();
+    auto allTimeUsage = dataManager->getAllTimeUsage();
+
+    int halfHeight = (graphHeight - 4) / 2;
+    int yPosition = 2;
+
+    mvwprintw(graphWindow, yPosition, 2, "Today's Usage: ");
+    yPosition += 1;
+
+    for(size_t i = 0; i < todaysUsage.size() && yPosition < halfHeight + 1; ++i) {
+        std::string timeStr = formatDailyTime(todaysUsage[i].dailyUsageMs);
+        mvwprintw(graphWindow, yPosition, 4, "%s %s", todaysUsage[i].appName.c_str(), timeStr.c_str());
+        yPosition++;
+    } 
+}
+
 void AppMonitor::draw() {
-    clear();
+    //werase(graphWindow);
+    //werase(blockWindow);
+    //werase(statusWindow);
 
     drawGraphWindow();
-    drawBlockWindow();
-    drawStatusWindow();
+    //drawBlockWindow();
+    //drawStatusWindow();
 
     refreshWindows();
 }
 
-AppMonitor::AppMonitor(AppDataManager dataManager) : dataManager(dataManager), selectedAppIndex(0), scrollOffset(0), editMode(false) {
+AppMonitor::AppMonitor(AppDataManager* dataManager) : dataManager(dataManager), selectedAppIndex(0), scrollOffset(0), editMode(false) {
     maxTime = 0;
     currentFocusedApp = "";
 
