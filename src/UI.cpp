@@ -90,6 +90,8 @@ void AppMonitor::testColors() {
     refreshWindows();
 }
 
+//Helper Functions for drawTodaysUsage
+
 std::string AppMonitor::formatDailyTime(long long elapsedMs) {
     long long seconds;
     long long minutes;
@@ -105,21 +107,76 @@ std::string AppMonitor::formatDailyTime(long long elapsedMs) {
     return output;
 }
 
+long long findMaximumUsage(std::vector<AppUsageData> todaysUsage) {
+    long long maxUsageMs = 0;
+    for (const auto& app : todaysUsage) {
+        if (app.dailyUsageMs > maxUsageMs) {
+            maxUsageMs = app.dailyUsageMs;
+        }
+    }
+    return maxUsageMs;
+}
+
+std::string createBarGraph(long long dailyUsageMs, long long maxUsageMs, int graphWidthInternal) {
+    int barLength = 0;
+    std::string barGraph = "[";
+    if (maxUsageMs > 0) {
+        barLength = static_cast<int>((static_cast<double>(dailyUsageMs) / maxUsageMs) * graphWidthInternal);
+    }
+    for (int i = 0; i < graphWidthInternal - 2; i++) {
+        if (i < barLength) {
+           barGraph += "="; 
+        }
+        else {
+            barGraph += " ";
+        }
+    }
+    barGraph += "]";
+    return barGraph;
+}
+
+std::string truncateString(std::string appName, int appNameWidth) {
+    if ((static_cast<int>(appName.length())) > appNameWidth) {
+        appName = appName.substr(0, appNameWidth - 3) + "...";
+    }
+    return appName;
+}
+
 void AppMonitor::drawGraphWindow() {
+//Variables***********************************************************
     auto todaysUsage = dataManager->getTodaysUsage();
     auto allTimeUsage = dataManager->getAllTimeUsage();
-
+    
+    int leftRightPadding = 2;
     int halfHeight = (graphHeight - 4) / 2;
-    int yPosition = 2;
+    int yPosition = 1;
+    int appNameWidth = 20;
+    int usageWidth = 15;
+    //Fill middle of window with graph
+    int graphWidthInternal = graphWidth - (leftRightPadding * 2) - appNameWidth - usageWidth;
 
-    mvwprintw(graphWindow, yPosition, 2, "Today's Usage: ");
+    //Ceiling on bar graphs
+    long long maxUsageMs = findMaximumUsage(todaysUsage);
+    
+//Headers************************************************************
+    mvwprintw(graphWindow, yPosition, leftRightPadding, "Today's Usage: ");
+    yPosition += 2;
+    mvwprintw(graphWindow, yPosition, leftRightPadding, "%-*s %-*s %s", appNameWidth, "App Name", graphWidthInternal, "Graph", "Usage");
     yPosition += 1;
 
+///Data**************************************************************
+    std::string appName;
+    std::string timeStr;
+    std::string barGraph;
+
     for(size_t i = 0; i < todaysUsage.size() && yPosition < halfHeight + 1; ++i) {
-        std::string timeStr = formatDailyTime(todaysUsage[i].dailyUsageMs);
-        mvwprintw(graphWindow, yPosition, 4, "%s %s", todaysUsage[i].appName.c_str(), timeStr.c_str());
+        appName = truncateString(todaysUsage[i].appName, appNameWidth);
+        timeStr = formatDailyTime(todaysUsage[i].dailyUsageMs);
+        barGraph = createBarGraph(todaysUsage[i].dailyUsageMs, maxUsageMs, graphWidthInternal);
+
+        mvwprintw(graphWindow, yPosition, leftRightPadding, "%-*s %-*s %s", appNameWidth, appName.c_str(), graphWidthInternal, barGraph.c_str(), timeStr.c_str());
         yPosition++;
-    } 
+    }
 }
 
 void AppMonitor::draw() {

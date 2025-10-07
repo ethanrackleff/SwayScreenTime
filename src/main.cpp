@@ -12,8 +12,8 @@ int main(int argc, char** argv) {
     //sst help 
     //cli(argc, argv);
     
-    /* 
-    try {
+     
+    /*try {
         AppDataManager dataManager("example.db");
         std::cout << "Database initialized successfully" << std::endl;
 
