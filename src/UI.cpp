@@ -143,6 +143,10 @@ std::string truncateString(std::string appName, int appNameWidth) {
 }
 
 void AppMonitor::drawGraphWindow() {
+//***********************************************************
+//Todays Usage***********************************************************
+//***********************************************************
+
 //Variables***********************************************************
     auto todaysUsage = dataManager->getTodaysUsage();
     auto allTimeUsage = dataManager->getAllTimeUsage();
@@ -177,6 +181,21 @@ void AppMonitor::drawGraphWindow() {
         mvwprintw(graphWindow, yPosition, leftRightPadding, "%-*s %-*s %s", appNameWidth, appName.c_str(), graphWidthInternal, barGraph.c_str(), timeStr.c_str());
         yPosition++;
     }
+
+//***********************************************************
+//Weekly Usage***********************************************
+//***********************************************************
+    auto weeklyUsage = dataManager->getThisWeeksUsage();
+    auto currDay = dataManager->getCurrDayOfWeek();
+    auto mostUsedApp = dataManager->getIthMostUsedAppThisWeek(1);
+    auto secondMostUsedApp = dataManager->getIthMostUsedAppThisWeek(2);
+
+    /*for (int i = 0; i < weeklyUsage.size(); i++) {
+        mvwprintw(graphWindow, yPosition, 1, 
+    }
+    */
+    
+    mvwprintw(graphWindow, yPosition, leftRightPadding, "Mon Tue Wed Thu Fri Sat Sun");
 }
 
 void AppMonitor::draw() {

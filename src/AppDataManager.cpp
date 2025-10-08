@@ -70,6 +70,18 @@ void AppDataManager::saveSession(const SessionTracker::Session& session) {
     }
 }
 
+//Used in getThisWeeksUsage
+int AppDataManager::getCurrDayOfWeek() {
+    auto now = std::chrono::system_clock::now();
+    auto time_t = std::chrono::system_clock::to_time_t(now);
+    auto tm = *std::localtime(&time_t);
+
+    // tm_wday: 0=Sunday, 1=Monday, ..., 6=Saturday
+    // Convert to Monday=0, Tuesday=1, ..., Sunday=6
+    int mondayIndex = (tm.tm_wday + 6) % 7;
+    return mondayIndex;
+}
+
 std::vector<AppUsageData> AppDataManager::getTodaysUsage() {
     std::vector<AppUsageData> usageData;
     std::string getUsageByAppSQL = 
@@ -138,6 +150,64 @@ std::vector<AppUsageData> AppDataManager::getAllTimeUsage() {
     return usageData;
 }
 
+std::vector<std::map<std::string, long long>> AppDataManager::getThisWeeksUsage() {
+    std::vector<std::map<std::string, long long>> weeklyUsageData;
+    std::map<std::string, long long> dailyUsageData;
+    std::string getUsageByAppSQL;
+    sqlite3_stmt* stmt;
+    int currDayOfWeek = getCurrDayOfWeek(); //0 is Monday
+    
+    //Get all days prior to today of this week app usage
+    int result = 0;    
+    for (int i = 0; i < currDayOfWeek; i++) {
+        dailyUsageData.clear();        
+
+       getUsageByAppSQL = 
+        "SELECT APP, SUM(MSELAPSED) AS weeklyUsage "
+        "FROM SESSIONS "
+        "WHERE START >= strftime('%s', date('start of day', '-" + std::to_string(i + 1) + " days')) "
+        "AND END < strftime('%s', date('start of day', '-" + std::to_string(i) + " days')) "
+        "GROUP BY APP;";
+
+        result = sqlite3_prepare_v2(database, getUsageByAppSQL.c_str(), -1, &stmt, nullptr);
+        if (result != SQLITE_OK) {
+            throw std::runtime_error("Failed to prepare getTodaysUsage query");
+        }
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            AppUsageData appData;
+        
+            const char* appName = (const char*)sqlite3_column_text(stmt, 0);
+            long long dailyUsageMs = sqlite3_column_int64(stmt, 1);
+            dailyUsageData[appName] = dailyUsageMs;
+        }
+        sqlite3_finalize(stmt);
+        weeklyUsageData.push_back(dailyUsageData);
+    }
+
+    //Get current day App Usage
+    getUsageByAppSQL =
+        "SELECT APP, SUM(MSELAPSED) AS weeklyUsage "
+        "FROM SESSIONS "
+        "WHERE START >= strftime('%s', date('now', 'start of day')) "
+        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) " 
+        "GROUP BY APP;";
+
+    result = sqlite3_prepare_v2(database, getUsageByAppSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getThisWeeksUsage query");
+    }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* appName = (const char*)sqlite3_column_text(stmt, 0);
+            long long dailyUsageMs = sqlite3_column_int64(stmt, 1);
+            dailyUsageData[appName] = dailyUsageMs;
+    }
+    sqlite3_finalize(stmt);
+    weeklyUsageData.push_back(dailyUsageData);
+
+    return weeklyUsageData;
+}
+
 long long AppDataManager::getTotalUsageToday() {
     std::string getTotalUsageSQL = 
         "SELECT SUM(MSELAPSED) as totalUsage "
@@ -149,7 +219,7 @@ long long AppDataManager::getTotalUsageToday() {
 
     int result = sqlite3_prepare_v2(database, getTotalUsageSQL.c_str(), -1, &stmt, nullptr);
     if (result != SQLITE_OK) {
-        throw std::runtime_error("Failed to prepare getTodaysUsage query");
+        throw std::runtime_error("Failed to prepare getTotalUsageToday query");
     }
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -177,6 +247,41 @@ std::map<std::string, long long> AppDataManager::getUsageTodayPercentage() {
     }
     
     return appToPercentMap;
+}
+
+AppUsageData AppDataManager::getIthMostUsedAppThisWeek(int i) {
+    AppUsageData appData;
+    int currDayOfWeek = getCurrDayOfWeek();
+    std::string getAppsByWeeklyUsageSQL =  
+        "SELECT APP, SUM(MSELAPSED) AS weeklyUsage "
+        "FROM SESSIONS "
+        "WHERE START >= strftime('%s', date('now', 'start of day', '-" + std::to_string(currDayOfWeek) + " days')) "
+        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) " 
+        "GROUP BY APP "
+        "ORDER BY weeklyUsage DESC "
+        "LIMIT 1 OFFSET " + std::to_string(i - 1) + ";";
+    sqlite3_stmt* stmt;
+    
+    int result = sqlite3_prepare_v2(database, getAppsByWeeklyUsageSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getIthMostUsedAppThisWeek query");
+    }
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        
+        const char* appName = (const char*)sqlite3_column_text(stmt, 0);
+        long long totalUsageMs = sqlite3_column_int64(stmt, 1);
+
+        appData.appName = std::string(appName);
+        appData.dailyUsageMs = 0;
+        appData.totalUsageMs = totalUsageMs;
+        appData.dailyLimitMs = 0;
+        appData.blockingEnabled =  false;
+        appData.currentSessionMs = 0;
+    }
+    sqlite3_finalize(stmt);
+
+    return appData; 
 }
 
 

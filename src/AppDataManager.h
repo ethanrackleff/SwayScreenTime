@@ -45,7 +45,11 @@ public:
     long long getRemainingTime(const std::string& appName);
 
     //Statistics
+    int getCurrDayOfWeek();
     long long getTotalUsageToday();
+    long long getWeeklyUsageByDay();
+    std::vector<std::map<std::string, long long>> getThisWeeksUsage();
+    AppUsageData getIthMostUsedAppThisWeek(int i);
     std::string getMostUsedAppToday();
     std::map<std::string, long long> getUsageTodayPercentage();
 

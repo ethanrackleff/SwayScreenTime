@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     //cli(argc, argv);
     
      
-    /*try {
+    try {
         AppDataManager dataManager("example.db");
         std::cout << "Database initialized successfully" << std::endl;
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
         std::cout << "Error: " << e.what() << std::endl; 
         return 1;
     }
-    */ 
+     
 
     //TUI Version
     AppDataManager dataManager("example.db");
