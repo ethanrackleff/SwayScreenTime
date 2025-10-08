@@ -33,25 +33,32 @@ public:
     void saveSession(const SessionTracker::Session& session);
 
     //App usage queries
-    std::vector<AppUsageData> getTodaysUsage();
     std::vector<AppUsageData> getAllTimeUsage();
+    std::vector<std::map<std::string, long long>> getThisWeeksUsage();
+    std::vector<AppUsageData> getTodaysUsage();
     AppUsageData getAppUsage(const std::string& appName);
-    std::string formatDailyTime(long long elapsedMs);
+
+    
+    //Statistics
+        //Total 
+        //Weekly
+        int getCurrDayOfWeek();
+        std::vector<long long> getTotalUsageThisWeekByDay(std::vector<std::map<std::string, long long>> weeklyData);
+        long long getMostScreenTimeDayThisWeek(std::vector<long long> totalWeeklyUsageByDay);
+        AppUsageData getIthMostUsedAppThisWeek(int i);
+        std::vector<long long> getThisWeeksUsageForApp(std::string appName);
+        //Daily
+        long long getTotalUsageToday();
+        long long findMaximumUsageToday(std::vector<AppUsageData> todaysUsage);
+        std::map<std::string, long long> getUsageTodayPercentage();
+        std::string formatDailyTime(long long elapsedMs);
+        
 
     //Implement Later: App blocking/limits
     void setAppLimit(const std::string& appName, long long limitMs);
     void setAppBlocking(const std::string& appName, bool enabled);
     bool isAppBlocked(const std::string& appName);
     long long getRemainingTime(const std::string& appName);
-
-    //Statistics
-    int getCurrDayOfWeek();
-    long long getTotalUsageToday();
-    long long getWeeklyUsageByDay();
-    std::vector<std::map<std::string, long long>> getThisWeeksUsage();
-    AppUsageData getIthMostUsedAppThisWeek(int i);
-    std::string getMostUsedAppToday();
-    std::map<std::string, long long> getUsageTodayPercentage();
 
     //Database maintenance
     void cleanOldSessions(int daysToKeep = 30);

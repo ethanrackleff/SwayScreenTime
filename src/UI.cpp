@@ -107,17 +107,7 @@ std::string AppMonitor::formatDailyTime(long long elapsedMs) {
     return output;
 }
 
-long long findMaximumUsage(std::vector<AppUsageData> todaysUsage) {
-    long long maxUsageMs = 0;
-    for (const auto& app : todaysUsage) {
-        if (app.dailyUsageMs > maxUsageMs) {
-            maxUsageMs = app.dailyUsageMs;
-        }
-    }
-    return maxUsageMs;
-}
-
-std::string createBarGraph(long long dailyUsageMs, long long maxUsageMs, int graphWidthInternal) {
+std::string createDailyBarGraph(long long dailyUsageMs, long long maxUsageMs, int graphWidthInternal) {
     int barLength = 0;
     std::string barGraph = "[";
     if (maxUsageMs > 0) {
@@ -160,7 +150,7 @@ void AppMonitor::drawGraphWindow() {
     int graphWidthInternal = graphWidth - (leftRightPadding * 2) - appNameWidth - usageWidth;
 
     //Ceiling on bar graphs
-    long long maxUsageMs = findMaximumUsage(todaysUsage);
+    long long maxUsageMs = dataManager->findMaximumUsageToday(todaysUsage);
     
 //Headers************************************************************
     mvwprintw(graphWindow, yPosition, leftRightPadding, "Today's Usage: ");
@@ -176,7 +166,7 @@ void AppMonitor::drawGraphWindow() {
     for(size_t i = 0; i < todaysUsage.size() && yPosition < halfHeight + 1; ++i) {
         appName = truncateString(todaysUsage[i].appName, appNameWidth);
         timeStr = formatDailyTime(todaysUsage[i].dailyUsageMs);
-        barGraph = createBarGraph(todaysUsage[i].dailyUsageMs, maxUsageMs, graphWidthInternal);
+        barGraph = createDailyBarGraph(todaysUsage[i].dailyUsageMs, maxUsageMs, graphWidthInternal);
 
         mvwprintw(graphWindow, yPosition, leftRightPadding, "%-*s %-*s %s", appNameWidth, appName.c_str(), graphWidthInternal, barGraph.c_str(), timeStr.c_str());
         yPosition++;
@@ -189,13 +179,20 @@ void AppMonitor::drawGraphWindow() {
     auto currDay = dataManager->getCurrDayOfWeek();
     auto mostUsedApp = dataManager->getIthMostUsedAppThisWeek(1);
     auto secondMostUsedApp = dataManager->getIthMostUsedAppThisWeek(2);
+    std::vector<long long> weeklyUsageByDayMostUsedApp = dataManager->getThisWeeksUsageForApp(mostUsedApp.appName);
+    std::vector<long long> weeklyUsageByDaySecondMostUsedApp = dataManager->getThisWeeksUsageForApp(secondMostUsedApp.appName);
 
-    /*for (int i = 0; i < weeklyUsage.size(); i++) {
-        mvwprintw(graphWindow, yPosition, 1, 
-    }
-    */
-    
+    int barWidth = 3;
+    yPosition = graphHeight - 2;
+    //heading
     mvwprintw(graphWindow, yPosition, leftRightPadding, "Mon Tue Wed Thu Fri Sat Sun");
+    yPosition--;
+
+    for (int i = 0; i < static_cast<int>(weeklyUsage.size()); i++) {
+        //mvwprintw(graphWindow, yPosition, leftRightPadding + (i * barWidth) + 1, createWeeklyBarGraph())
+    }
+    
+    
 }
 
 void AppMonitor::draw() {
