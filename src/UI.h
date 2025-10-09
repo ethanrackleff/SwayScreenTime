@@ -65,6 +65,7 @@ public:
     void drawGraphWindow();
     //Graph headers
     std::string formatDailyTime(long long elapsedMs);
+    std::string formatDailyTimeTruncated(long long elapsedMs);
     void drawBlockWindow();
     void drawStatusWindow();
     void drawAppUsageGraph(const std::string& appName, int startY, int startX, int width, int height);
