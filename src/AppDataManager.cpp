@@ -131,14 +131,16 @@ std::vector<std::map<std::string, long long>> AppDataManager::getThisWeeksUsage(
     
     //Get all days prior to today of this week app usage
     int result = 0;    
+    int daysFromToday = 0;
     for (int i = 0; i < currDayOfWeek; i++) {
         dailyUsageData.clear();        
+        daysFromToday = currDayOfWeek - i;
 
        getUsageByAppSQL = 
         "SELECT APP, SUM(MSELAPSED) AS weeklyUsage "
         "FROM SESSIONS "
-        "WHERE START >= strftime('%s', date('start of day', '-" + std::to_string(i + 1) + " days')) "
-        "AND END < strftime('%s', date('start of day', '-" + std::to_string(i) + " days')) "
+        "WHERE START >= strftime('%s', date('now', 'start of day', '-" + std::to_string(daysFromToday) + " days')) "
+        "AND END < strftime('%s', date('now', 'start of day', '-" + std::to_string(daysFromToday - 1) + " days')) "
         "GROUP BY APP;";
 
         result = sqlite3_prepare_v2(database, getUsageByAppSQL.c_str(), -1, &stmt, nullptr);
@@ -193,14 +195,17 @@ std::vector<long long> AppDataManager::getTotalUsageThisWeekByDay(std::vector<st
     return totalWeeklyUsageByDay;
 }
 
-long long AppDataManager::getMostScreenTimeDayThisWeek(std::vector<long long> totalWeeklyUsageByDay) {
+int AppDataManager::getMostScreenTimeDayThisWeek(std::vector<long long> totalWeeklyUsageByDay) {
+    int maxMsIndex = 0;
     long long maxMs = 0;
-    for (long long dayMs : totalWeeklyUsageByDay) {
-        if (dayMs > maxMs) {
-            maxMs = dayMs;
+    for (int i = 0; i < static_cast<int>(totalWeeklyUsageByDay.size()); i++) {
+        //std::cout << "Day: " << i << " Usage: " << totalWeeklyUsageByDay[i] << std::endl;
+        if (totalWeeklyUsageByDay[i] > maxMs) {
+            maxMs = totalWeeklyUsageByDay[i];
+            maxMsIndex = i;
         }
     }
-    return maxMs;
+    return maxMsIndex;
 }
 
 AppUsageData AppDataManager::getIthMostUsedAppThisWeek(int i) {
@@ -247,12 +252,14 @@ std::vector<long long> AppDataManager::getThisWeeksUsageForApp(std::string appNa
     long long dailyUsageMs = 0;
     //Get all days prior to today of this week app usage
     int result = 0;    
+    int daysFromToday = 0;
     for (int i = 0; i < currDayOfWeek; i++) {
+        daysFromToday = currDayOfWeek - i;
        getUsageByDaySQL = 
         "SELECT APP, SUM(MSELAPSED) AS weeklyUsage "
         "FROM SESSIONS "
-        "WHERE START >= strftime('%s', date('start of day', '-" + std::to_string(i + 1) + " days')) "
-        "AND END < strftime('%s', date('start of day', '-" + std::to_string(i) + " days')) "
+        "WHERE START >= strftime('%s', date('now', 'start of day', '-" + std::to_string(daysFromToday) + " days')) "
+        "AND END < strftime('%s', date('now', 'start of day', '-" + std::to_string(daysFromToday - 1) + " days')) "
         "AND APP == '" + appName + "';";
 
         result = sqlite3_prepare_v2(database, getUsageByDaySQL.c_str(), -1, &stmt, nullptr);

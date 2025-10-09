@@ -44,7 +44,7 @@ public:
         //Weekly
         int getCurrDayOfWeek();
         std::vector<long long> getTotalUsageThisWeekByDay(std::vector<std::map<std::string, long long>> weeklyData);
-        long long getMostScreenTimeDayThisWeek(std::vector<long long> totalWeeklyUsageByDay);
+        int getMostScreenTimeDayThisWeek(std::vector<long long> totalWeeklyUsageByDay);
         AppUsageData getIthMostUsedAppThisWeek(int i);
         std::vector<long long> getThisWeeksUsageForApp(std::string appName);
         //Daily

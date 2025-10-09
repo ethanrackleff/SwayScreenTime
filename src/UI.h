@@ -68,6 +68,8 @@ public:
     void drawBlockWindow();
     void drawStatusWindow();
     void drawAppUsageGraph(const std::string& appName, int startY, int startX, int width, int height);
+    void createWeeklyBar(int day, int xPosition);
+
 
     // Input handling
     void handleInput();

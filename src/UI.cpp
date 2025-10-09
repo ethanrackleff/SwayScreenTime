@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 #include <chrono>
+#include <iostream>
 
 void AppMonitor::refreshWindows() {
     wrefresh(mainWindow);
@@ -132,6 +133,82 @@ std::string truncateString(std::string appName, int appNameWidth) {
     return appName;
 }
 
+void AppMonitor::createWeeklyBar(int day, int xPosition) {
+    auto weeklyUsage = dataManager->getThisWeeksUsage();
+    auto currDay = dataManager->getCurrDayOfWeek();
+    auto mostUsedApp = dataManager->getIthMostUsedAppThisWeek(1);
+    auto secondMostUsedApp = dataManager->getIthMostUsedAppThisWeek(2);
+    std::vector<long long> weeklyUsageByDayMostUsedApp = dataManager->getThisWeeksUsageForApp(mostUsedApp.appName);
+    std::vector<long long> weeklyUsageByDaySecondMostUsedApp = dataManager->getThisWeeksUsageForApp(secondMostUsedApp.appName);
+    std::vector<std::string> daysOfTheWeek = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    int spaceWidthForDays = graphWidth / 7; 
+    int barWidth = graphWidth / 7 - 1;
+    int halfHeight = (graphHeight - 4) / 2;
+    int maxBarHeight = halfHeight - 2;
+    std::vector<long long> totalWeeklyUsageByDay = dataManager->getTotalUsageThisWeekByDay(weeklyUsage);
+
+    int highestScreenTimeDay = dataManager->getMostScreenTimeDayThisWeek(totalWeeklyUsageByDay);
+    long long highestScreenTimeDayMs = totalWeeklyUsageByDay[highestScreenTimeDay];
+
+    int currbarHeight = 0;
+    int otherHeight = 0;
+    float otherPercent = 0;
+    int mostUsedHeight = 0;
+    float mostUsedPercent = 0;
+    int secondMostUsedHeight = 0;
+    float secondMostUsedPercent = 0;
+    
+    
+
+    std::string barString = "";
+    if (totalWeeklyUsageByDay[day] != 0) {
+        mostUsedPercent = (float)weeklyUsageByDayMostUsedApp[day] / (float)totalWeeklyUsageByDay[day];
+        secondMostUsedPercent = (float)weeklyUsageByDaySecondMostUsedApp[day] / (float)totalWeeklyUsageByDay[day];
+        otherPercent = (float)(1.0 - mostUsedPercent - secondMostUsedPercent);
+    }
+    if (highestScreenTimeDayMs != 0) {
+        currbarHeight = (int)(((float)totalWeeklyUsageByDay[day] / highestScreenTimeDayMs) * (float)maxBarHeight);
+    } 
+
+    //std::cout << "mostUsedPercent: " << mostUsedPercent << std::endl;
+    //std::cout << "secondMostUsedPercent: " << secondMostUsedPercent << std::endl;
+    //std::cout << "otherPercent: " << otherPercent << std::endl;
+
+    mostUsedHeight = (int)(currbarHeight * mostUsedPercent);
+    secondMostUsedHeight = (int)(currbarHeight * secondMostUsedPercent);
+    otherHeight = (int)(currbarHeight * otherPercent);
+    //std::cout << "mostUsedHeight: " << mostUsedHeight << std::endl;
+    //std::cout << "secondMostUsedHeight: " << secondMostUsedHeight << std::endl;
+    //std::cout << "otherHeight: " << otherHeight << std::endl;
+
+
+    int yPosition = graphHeight - 3;
+    for (int h = 1; h <= mostUsedHeight; h++) {
+        barString = "";
+        for (int w = 1; w <= barWidth; w++) {
+            barString = barString + "*";
+        }
+        mvwprintw(graphWindow, yPosition, xPosition, barString.c_str());
+        yPosition--;
+    }
+    for (int h2 = 1; h2 <= secondMostUsedHeight; h2++) {
+        barString = "";
+        for (int w = 1; w <= barWidth; w++) {
+            barString = barString + "@";
+        }
+        mvwprintw(graphWindow, yPosition, xPosition, barString.c_str());
+        yPosition--;
+    }
+    for (int h3 = 1; h3 <= otherHeight; h3++) {
+        barString = "";
+        for (int w = 1; w <= barWidth; w++) {
+            barString = barString + "#";
+        }
+        mvwprintw(graphWindow, yPosition, xPosition, barString.c_str());
+        yPosition--;
+    }
+}
+
 void AppMonitor::drawGraphWindow() {
 //***********************************************************
 //Todays Usage***********************************************************
@@ -143,6 +220,7 @@ void AppMonitor::drawGraphWindow() {
     
     int leftRightPadding = 2;
     int halfHeight = (graphHeight - 4) / 2;
+    int maxBarHeight = halfHeight - 2;
     int yPosition = 1;
     int appNameWidth = 20;
     int usageWidth = 15;
@@ -181,16 +259,25 @@ void AppMonitor::drawGraphWindow() {
     auto secondMostUsedApp = dataManager->getIthMostUsedAppThisWeek(2);
     std::vector<long long> weeklyUsageByDayMostUsedApp = dataManager->getThisWeeksUsageForApp(mostUsedApp.appName);
     std::vector<long long> weeklyUsageByDaySecondMostUsedApp = dataManager->getThisWeeksUsageForApp(secondMostUsedApp.appName);
-
-    int barWidth = 3;
+    std::vector<std::string> daysOfTheWeek = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    int spaceWidthForDays = graphWidth / 7; 
+    int barWidth = graphWidth / 7 - 1;
     yPosition = graphHeight - 2;
     //heading
-    mvwprintw(graphWindow, yPosition, leftRightPadding, "Mon Tue Wed Thu Fri Sat Sun");
-    yPosition--;
-
-    for (int i = 0; i < static_cast<int>(weeklyUsage.size()); i++) {
-        //mvwprintw(graphWindow, yPosition, leftRightPadding + (i * barWidth) + 1, createWeeklyBarGraph())
+    for (int i = 0; i < static_cast<int>(daysOfTheWeek.size()); i++)  {
+        mvwprintw(graphWindow, yPosition, spaceWidthForDays * i + leftRightPadding,  daysOfTheWeek[i].c_str());
+        //mvwprintw(graphWindow, yPosition, leftRightPadding + charsInDaysOfTheWeek + (spaceWidthForDays * i),  daysOfTheWeek[i].c_str());
+        
+        //charsInDaysOfTheWeek += static_cast<int>(daysOfTheWeek[i].size());
     }
+    yPosition = maxBarHeight;
+    std::string currBar = "";
+    //Create bar graph
+    for (int i = 0; i < static_cast<int>(weeklyUsage.size()); i++) {
+        createWeeklyBar(i, spaceWidthForDays * i + leftRightPadding);
+    }
+    //createWeeklyBar(2, spaceWidthForDays * 2 + leftRightPadding);
+
     
     
 }
