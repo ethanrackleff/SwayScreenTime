@@ -6,7 +6,6 @@
 #include <map>
 #include <sqlite3.h>
 #include "SessionTracker.h"
-
 struct AppUsageData {
     std::string appName;
     long long dailyUsageMs;

@@ -307,6 +307,23 @@ void AppMonitor::drawGraphWindow() {
     }
 
 ///Key and Monthly Stats**************************************************************
+///Implement monthly stats later
+    yPosition = (graphHeight * 2) / 3;
+    std::vector<std::string> keyString = {
+        "Usage:",
+       "* 1st: ",
+        "  " + (mostUsedApp.appName.empty() ? "N/A" : mostUsedApp.appName),
+        "@ 2nd:",
+        "  " + (secondMostUsedApp.appName.empty() ? "N/A" : secondMostUsedApp.appName),
+        "# Other"
+    };
+    for (std::string s : keyString) {
+            mvwprintw(graphWindow, yPosition, spaceWidthForDays * 7 + leftRightPadding, s.c_str()); 
+            yPosition++;
+    }
+    //yPosition -= 7;
+    //mvwprintw(graphWindow, yPosition, spaceWidthForDays * 7 + leftRightPadding + 2, "Month Usage:"); 
+
 
     
 }
