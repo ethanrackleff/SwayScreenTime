@@ -28,12 +28,13 @@ void AppMonitor::initializeWindows() {
     blockWidth = screenWidth - graphWidth;
     blockHeight = graphHeight;
     statusWidth = screenWidth;
-    statusHeight = 4;
-
+    statusHeight = 1;
+    
+    clear();
     //create windows
     graphWindow = newwin(graphHeight, graphWidth, 0, 0);
     blockWindow = newwin(blockHeight, blockWidth, 0, graphWidth);
-    statusWindow = newwin(statusHeight, statusWidth, graphHeight, 0);
+    statusWindow = newwin(1, screenWidth, graphHeight, 0);
     mainWindow = stdscr;
 
     //enable scrolling
@@ -43,12 +44,15 @@ void AppMonitor::initializeWindows() {
     //borders
     box(graphWindow, 0, 0);
     box(blockWindow, 0, 0);
-    box(statusWindow, 0, 0);
+    //box(statusWindow, 0, 0);
+    
+    //colors
+    wbkgd(statusWindow, COLOR_PAIR(2));
 
     //titles
     mvwprintw(graphWindow, 0, 2, "App Usage");
     mvwprintw(blockWindow, 0, 2, "Blockers");
-    mvwprintw(statusWindow, 0, 2, "Status");
+    mvwprintw(statusWindow, 0, 0, "Status");
  
     //display content
     refreshWindows(); 
@@ -96,8 +100,38 @@ void AppMonitor::testColors() {
 //***********************************************************
 
 //***********************************************************
+//Status Window**********************************************
+//***********************************************************
+
+void AppMonitor::drawStatusWindow() {
+    wbkgd(statusWindow, COLOR_PAIR(2));
+}
+
+//***********************************************************
 //Blocker Window*********************************************
 //***********************************************************
+
+std::string AppMonitor::drawBlockGraph(AppUsageData& app, int width) {
+    int barLength = 0;
+    std::string barGraph = "[";
+    if ((app.dailyLimitMs > 0) && (app.dailyLimitMs >= app.dailyUsageMs)) {
+        barLength = static_cast<int>((static_cast<double>(app.dailyUsageMs) / app.dailyLimitMs) * (width - 2));
+    }
+    else {
+        barLength = width - 2;
+    }
+    for (int i = 0; i < width - 2; i++) {
+        if (i < barLength) {
+           barGraph += "="; 
+        }
+        else {
+            barGraph += " ";
+        }
+    }
+    barGraph += "]";
+    return barGraph;
+
+}
 
 void AppMonitor::drawBlockWindow() {
     auto blockData = dataManager->getBlocks();
@@ -121,12 +155,18 @@ void AppMonitor::drawBlockWindow() {
     std::string enabled;
 
     for (auto& app : blockData) {
+        app.dailyUsageMs = dataManager->getTodaysUsageForApp(app.appName);
         appName = app.appName;
         limit = formatDailyTimeTruncated(app.dailyLimitMs);
-        enabled = std::to_string(app.blockingEnabled);
-        //barGraph = createLimitBarGraph(app);
+        if (app.blockingEnabled) {
+            enabled = "True";
+        }
+        else {
+            enabled = "False";
+        }
+        barGraph = drawBlockGraph(app, graphWidthInternal);
         yPosition++;
-       mvwprintw(blockWindow, yPosition, leftRightPadding, "%-*s %-*s %-*s %s", appNameWidth, appName.c_str(), graphWidthInternal, "Graph", limitWidth, limit.c_str(), enabled.c_str()); 
+       mvwprintw(blockWindow, yPosition, leftRightPadding, "%-*s %-*s %-*s %s", appNameWidth, appName.c_str(), graphWidthInternal, barGraph.c_str(), limitWidth, limit.c_str(), enabled.c_str()); 
     }
 }
 
@@ -144,14 +184,14 @@ std::string AppMonitor::formatDailyTimeTruncated(long long elapsedMs) {
     seconds = (elapsedMs / 1000);
     minutes = (seconds / 60) % 60;
     hours = (minutes / 60);
-    seconds %= 60000;
+    seconds %= 60;
    
     if(hours != 0) {
         output = output + std::to_string(hours) + "h, ";
-            if (minutes != 0) {
-                output = output + std::to_string(minutes) + "m, "; 
-            }
-        }
+    }
+    if (minutes != 0) {
+            output = output + std::to_string(minutes) + "m, "; 
+    }
         output = output + std::to_string(seconds) + "s";
 
     return output;
@@ -165,7 +205,7 @@ std::string AppMonitor::formatDailyTime(long long elapsedMs) {
     seconds = (elapsedMs / 1000);
     minutes = (seconds / 60) % 60;
     hours = (minutes / 60);
-    seconds %= 60000;
+    seconds %= 60;
 
         output = std::to_string(hours) + "h, " + std::to_string(minutes) + "m, " + std::to_string(seconds) + "s";
 
@@ -385,7 +425,7 @@ void AppMonitor::draw() {
 
     drawGraphWindow();
     drawBlockWindow();
-    //drawStatusWindow();
+    drawStatusWindow();
 
     refreshWindows();
 }
