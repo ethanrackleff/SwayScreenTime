@@ -13,7 +13,7 @@ AppDataManager::AppDataManager(const std::string& databasePath)
     if (result!= SQLITE_OK) {
         throw std::runtime_error("Failed to open database");
     }
-
+    sqlite3_exec(database, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
     createTables();
 }
 AppDataManager::~AppDataManager() {
@@ -23,7 +23,7 @@ AppDataManager::~AppDataManager() {
     }
 }
 void AppDataManager::createTables() {
-    sqlite3* database;
+    //sqlite3* database;
     int result = 0;
     char* errMsg = nullptr;
 
@@ -41,7 +41,7 @@ void AppDataManager::createTables() {
         "DAILY_LIMIT_MS INTEGER NOT NULL,"
         "ENABLED BOOLEAN NOT NULL DEFAULT 0);";
 
-    result = sqlite3_open(dbPath.c_str(), &database);
+    //result = sqlite3_open(dbPath.c_str(), &database);
     result = sqlite3_exec(database, createSessionTableSQL.c_str(), nullptr, nullptr, &errMsg);
     if (result != SQLITE_OK) {
         sqlite3_free(errMsg);
@@ -59,17 +59,152 @@ void AppDataManager::saveSession(const SessionTracker::Session& session) {
     char* msgErr = nullptr;
     int result = 0;
     std::string insertSessionSQL = 
+        "BEGIN TRANSACTION; "
         "INSERT INTO SESSIONS (APP, START, END, MSELAPSED) VALUES ('" 
         + session.app_id + "'," 
         + std::to_string(session.startCalendar) + ", " 
         + std::to_string(session.endCalendar) + ", " 
-        + std::to_string(session.msElapsed.count()) + ");";
+        + std::to_string(session.msElapsed.count()) + "); "
+        "COMMIT;";
 
     result = sqlite3_exec(database, insertSessionSQL.c_str(), nullptr, nullptr, &msgErr);
     if (result != SQLITE_OK) {
         sqlite3_free(msgErr);
         throw std::runtime_error("Failed to save session to database");
     }
+}
+
+//*******************************************************************
+//Blockers*****************************************************
+//*******************************************************************
+void AppDataManager::setAppLimit(std::string appName, long long limitMs) {
+    char* msgErr = nullptr;
+    int result = 0;
+    std::string insertBlockSQL = 
+        "INSERT INTO LIMITS (APP, DAILY_LIMIT_MS, ENABLED) VALUES ('test', 1000, 0);";
+        /*"INSERT INTO LIMITS (APP, DAILY_LIMIT_MS, ENABLED) VALUES ('" 
+        + appName + "', " 
+        + std::to_string(limitMs) + ", " 
+        + "0);"; //0 for false
+        */
+
+    result = sqlite3_exec(database, insertBlockSQL.c_str(), nullptr, nullptr, &msgErr);
+    if (result != SQLITE_OK) {
+        std::string error = "Failed to add block to LIMITS database: "+ std::string(sqlite3_errmsg(database));
+        sqlite3_free(msgErr);
+        throw std::runtime_error(error);
+    } 
+}
+    //void setAppBlocking(const std::string& appName, bool enabled);
+    //bool isAppBlocked(const std::string& appName);
+long long AppDataManager::getTodaysUsageForApp(const std::string& appName) {
+    std::string getTodaysUsageSQL = 
+        "SELECT APP, SUM(MSELAPSED) AS dailyUsage "
+        "FROM SESSIONS "
+        "WHERE START >= strftime('%s', date('now', 'start of day')) "
+        "AND END <= strftime('%s', date('now', 'start of day', '+1 day')) " 
+        "AND APP == '" + appName + "' ";
+        "GROUP BY APP;";
+    long long dailyUsageMs = 0;
+    sqlite3_stmt* stmt;
+
+    int result = sqlite3_prepare_v2(database, getTodaysUsageSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getRemainingBlockTime query");
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        dailyUsageMs = sqlite3_column_int64(stmt, 1);
+    }
+    sqlite3_finalize(stmt);
+    return dailyUsageMs; 
+}
+
+long long AppDataManager::getLimitMsForApp(const std::string& appName) {
+    std::string getLimitMsSQL = 
+        "SELECT APP, DAILY_LIMIT_MS "
+        "FROM LIMITS "
+        "WHERE APP == '" + appName + "';";
+    sqlite3_stmt* stmt;
+    long long limitMs = 0;
+
+    int result = sqlite3_prepare_v2(database, getLimitMsSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getLimitMsForApp query");
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        long long limitMs = sqlite3_column_int64(stmt, 1);
+    }
+    sqlite3_finalize(stmt);
+
+    return limitMs; 
+}
+
+bool AppDataManager::isAppBlocked(const std::string& appName) {
+    std::string getBlockEnabledStatusSQL = 
+        "SELECT APP, ENABLED "
+        "FROM LIMITS "
+        "WHERE APP == '" + appName + "';";
+    sqlite3_stmt* stmt;
+    bool enabled = false;
+
+    int result = sqlite3_prepare_v2(database, getBlockEnabledStatusSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getBlockEnabledStatus query");
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        enabled = sqlite3_column_int64(stmt, 1);
+    }
+    sqlite3_finalize(stmt);
+
+    return enabled; 
+
+}
+
+float AppDataManager::calculateUsageLimitPercentage(const std::string& appName) {
+    float usageLimitPercentage = 0;
+    long long todaysUsageMs = getTodaysUsageForApp(appName);
+    long long limitMs = getLimitMsForApp(appName);
+    if (limitMs != (float)0) {
+        usageLimitPercentage = (float)((float)todaysUsageMs / (float)limitMs);
+    }
+    return usageLimitPercentage;
+}
+
+std::vector<AppUsageData> AppDataManager::getBlocks() {
+    std::vector<AppUsageData> blockData;
+    std::string getBlockDataSQL = 
+        "SELECT APP, DAILY_LIMIT_MS, ENABLED "
+        "FROM LIMITS "
+        "GROUP BY APP;";
+    sqlite3_stmt* stmt;
+
+    int result = sqlite3_prepare_v2(database, getBlockDataSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare getBlocks query");
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        AppUsageData appData;
+        
+        const char* appName = (const char*)sqlite3_column_text(stmt, 0);
+        long long dailyLimitMs = sqlite3_column_int64(stmt, 1);
+        bool enabled = sqlite3_column_int64(stmt, 2);
+
+        appData.appName = std::string(appName);
+        appData.dailyUsageMs = 0;
+        appData.totalUsageMs = 0;
+        appData.dailyLimitMs = dailyLimitMs;
+        appData.blockingEnabled = enabled;
+        appData.currentSessionMs = 0;
+
+        blockData.push_back(appData);
+    }
+    sqlite3_finalize(stmt);
+
+    return blockData;
 }
 
 //*******************************************************************

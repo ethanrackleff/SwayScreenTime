@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
         std::cout << "Session tracking started" << std::endl;
         
         //Use to run monitor screen time for 10 seconds
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
 
         tracker.stopTracking();
         std::cout << "Session tracking stopped" << std::endl;

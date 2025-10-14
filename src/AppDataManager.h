@@ -53,11 +53,13 @@ public:
         std::string formatDailyTime(long long elapsedMs);
         
 
-    //Implement Later: App blocking/limits
-    void setAppLimit(const std::string& appName, long long limitMs);
-    void setAppBlocking(const std::string& appName, bool enabled);
+    //App blocking/limits
+    void setAppLimit(std::string appName, long long limitMs);
+    long long getTodaysUsageForApp(const std::string& appName);
+    long long getLimitMsForApp(const std::string& appName);
     bool isAppBlocked(const std::string& appName);
-    long long getRemainingTime(const std::string& appName);
+    float calculateUsageLimitPercentage(const std::string& appName);
+    std::vector<AppUsageData> getBlocks();
 
     //Database maintenance
     void cleanOldSessions(int daysToKeep = 30);

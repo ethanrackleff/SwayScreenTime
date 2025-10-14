@@ -91,6 +91,49 @@ void AppMonitor::testColors() {
     refreshWindows();
 }
 
+//***********************************************************
+//Tool Window**********************************************
+//***********************************************************
+
+//***********************************************************
+//Blocker Window*********************************************
+//***********************************************************
+
+void AppMonitor::drawBlockWindow() {
+    auto blockData = dataManager->getBlocks();
+    int leftRightPadding = 2;
+    int halfHeight = (graphHeight - 4) / 2;
+    int maxBarHeight = halfHeight - 2;
+    int yPosition = 2;
+    int appNameWidth = 12;
+    int limitWidth = 8;
+    int enabledWidth = 8;
+    //Fill middle of window with graph
+    int graphWidthInternal = blockWidth - (leftRightPadding * 2) - appNameWidth - limitWidth - enabledWidth - 2;
+
+//Headers************************************************************
+    mvwprintw(blockWindow, yPosition, leftRightPadding, "%-*s %-*s %-*s %s", appNameWidth, "App Name", graphWidthInternal, "Graph", limitWidth, "Limit", "Enabled");
+
+//Data***************************************************************
+    std::string appName;
+    std::string limit;
+    std::string barGraph;
+    std::string enabled;
+
+    for (auto& app : blockData) {
+        appName = app.appName;
+        limit = formatDailyTimeTruncated(app.dailyLimitMs);
+        enabled = std::to_string(app.blockingEnabled);
+        //barGraph = createLimitBarGraph(app);
+        yPosition++;
+       mvwprintw(blockWindow, yPosition, leftRightPadding, "%-*s %-*s %-*s %s", appNameWidth, appName.c_str(), graphWidthInternal, "Graph", limitWidth, limit.c_str(), enabled.c_str()); 
+    }
+}
+
+//***********************************************************
+//Graph Window***********************************************
+//***********************************************************
+
 //Helper Functions for drawTodaysWindow()
 std::string AppMonitor::formatDailyTimeTruncated(long long elapsedMs) {
     long long seconds;
@@ -258,7 +301,7 @@ void AppMonitor::drawGraphWindow() {
     long long maxUsageMs = dataManager->findMaximumUsageToday(todaysUsage);
 
 //Headers************************************************************
-    mvwprintw(graphWindow, yPosition, leftRightPadding, "Today's Usage: ");
+    mvwprintw(graphWindow, yPosition, leftRightPadding, "Today: ");
     yPosition += 2;
     mvwprintw(graphWindow, yPosition, leftRightPadding, "%-*s %-*s %s", appNameWidth, "App Name", graphWidthInternal, "Graph", "Usage");
     yPosition += 1;
@@ -292,9 +335,12 @@ void AppMonitor::drawGraphWindow() {
     std::vector<std::string> daysOfTheWeek = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     int spaceWidthForDays = graphWidth / 7 - 2; 
     int barWidth = graphWidth / 7 - 4;
-    yPosition = graphHeight - 2;
 
 ///headers**************************************************************
+    yPosition = halfHeight + 3;
+    mvwprintw(graphWindow, yPosition, leftRightPadding, "This Week: ");
+
+    yPosition = graphHeight - 2;
     for (int i = 0; i < static_cast<int>(daysOfTheWeek.size()); i++)  {
         mvwprintw(graphWindow, yPosition, spaceWidthForDays * i + leftRightPadding,  daysOfTheWeek[i].c_str());
     }
@@ -312,9 +358,9 @@ void AppMonitor::drawGraphWindow() {
     std::vector<std::string> keyString = {
         "Usage:",
        "* 1st: ",
-        "  " + (mostUsedApp.appName.empty() ? "N/A" : mostUsedApp.appName),
+        "  " + (mostUsedApp.appName.empty() ? "N/A" : truncateString(mostUsedApp.appName, 10)),
         "@ 2nd:",
-        "  " + (secondMostUsedApp.appName.empty() ? "N/A" : secondMostUsedApp.appName),
+        "  " + (secondMostUsedApp.appName.empty() ? "N/A" : truncateString(secondMostUsedApp.appName, 10)),
         "# Other"
     };
     for (std::string s : keyString) {
@@ -328,13 +374,17 @@ void AppMonitor::drawGraphWindow() {
     
 }
 
+//***********************************************************
+//Constructors & Destructors*********************************
+//***********************************************************
+
 void AppMonitor::draw() {
     //werase(graphWindow);
     //werase(blockWindow);
     //werase(statusWindow);
 
     drawGraphWindow();
-    //drawBlockWindow();
+    drawBlockWindow();
     //drawStatusWindow();
 
     refreshWindows();
