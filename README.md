@@ -20,3 +20,4 @@ Both of these commands output JSON text in the terminal. We will convert this JS
 * [ ] Figure out how to implement `change_session`
 * [ ] Figure out how the attributes of the `Session` structure
 
+Testing
