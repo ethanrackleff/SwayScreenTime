@@ -52,7 +52,7 @@ void AppMonitor::initializeWindows() {
     //titles
     mvwprintw(graphWindow, 0, 2, "App Usage");
     mvwprintw(blockWindow, 0, 2, "Blockers");
-    mvwprintw(statusWindow, 0, 0, "Status");
+    mvwprintw(statusWindow, 0, 2, "Status");
  
     //display content
     refreshWindows(); 
@@ -452,6 +452,91 @@ AppMonitor::~AppMonitor() {
     endwin();
 }
 
+void AppMonitor::editAppTimeLimit() {
+    std::vector<AppUsageData> blockData = dataManager->getBlocks();
+    if (selectedAppIndex < 0 || selectedAppIndex >= static_cast<int>(blockData.size())) {
+        return;
+    }
+    AppUsageData& app = blockData[selectedAppIndex];
+
+    inputHandler.startEdit();
+
+    while (inputHandler.isEditing()) {
+        werase(blockWindow);
+        box(blockWindow, 0, 0);
+        mvwprintw(blockWindow, 0, 2, "Blockers");
+        int yPos = 2 + selectedAppIndex + 1;
+        mvwprintw(blockWindow, 2, 2, "Enter hours (press Enter to save, ESC to cancel): ");
+        std::string buffer = inputHandler.getEditBuffer();
+        mvwprintw(blockWindow, 3, 2, "Hours: %s_", buffer.c_str());
+        wrefresh(blockWindow);
+        int ch = getch();
+        if (ch == 27) {//ESC
+            inputHandler.cancelEdit();
+            break;
+        }
+        bool done = inputHandler.handleEditKey(ch);
+        if (done && inputHandler.isEditing() == false) {
+            std::string input = inputHandler.getEditBuffer();
+            if (!input.empty()) {
+                try {
+                    double hours = std::stod(input);
+                    long long limitMs = static_cast<long long>(hours * 3600 * 1000);
+                    dataManager->updateAppLimit(app.appName, limitMs, app.blockingEnabled);
+                    wrefresh(statusWindow);
+                    wrefresh(blockWindow);
+                }
+                catch (const std::exception e) {
+                    mvwprintw(statusWindow, 0, 2, "Invalid input");
+                    wrefresh(statusWindow);
+                }
+            }
+            inputHandler.clearEditBuffer();
+            break;
+        }
+    }
+    draw();
+}
+
+void AppMonitor::handleInput(int ch) {
+    InputAction action = inputHandler.processKey(ch);
+    std::vector<AppUsageData> blockData = dataManager->getBlocks();
+    
+    switch(action) {
+        case InputAction::NAVIGATE_UP:
+            if (selectedAppIndex > 0) {
+                selectedAppIndex--;
+            }
+            break;
+        case InputAction::NAVIGATE_DOWN:
+            if (selectedAppIndex < static_cast<int>(blockData.size()) - 1) {
+                selectedAppIndex++;
+            }
+        case InputAction::TOGGLE:
+            toggleAppBlocking();
+            break;
+        case InputAction::EDIT_LIMIT:
+            editAppTimeLimit();
+            break;
+        default:
+            break;
+    }
+}
+
+void AppMonitor::toggleAppBlocking() {
+      std::vector<AppUsageData> blockData = dataManager->getBlocks();
+
+      if (selectedAppIndex >= 0 && selectedAppIndex < static_cast<int>(blockData.size())) {
+          AppUsageData& app = blockData[selectedAppIndex];
+          bool newStatus = !app.blockingEnabled;
+
+          dataManager->setBlockEnabled(app.appName, newStatus);
+
+          std::string msg = app.appName + ": Blocking " + (newStatus ? "ENABLED" : "DISABLED");
+          mvwprintw(statusWindow, 0, 2, "%-*s", statusWidth - 4, msg.c_str());
+          wrefresh(statusWindow);
+      }
+  }
 
 
 

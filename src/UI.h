@@ -6,12 +6,14 @@
 #include <map>
 #include <sqlite3.h>
 #include "AppDataManager.h"
+#include "UserInput.h"
 
 
 class AppMonitor {
 private:
 
     AppDataManager* dataManager;
+    UserInput inputHandler;
     // Window management
     WINDOW* graphWindow;
     WINDOW* blockWindow;
@@ -74,14 +76,13 @@ public:
 
 
     // Input handling
-    void handleInput();
+    void handleInput(int ch);
     int processKeypress(int key);
 
     // App blocking interface
     void selectNextApp();
     void selectPreviousApp();
     void toggleAppBlocking();
-    void editAppTimeLimit();
     void saveAppSettings();
 
     // Utility functions
@@ -93,6 +94,8 @@ public:
     // Getters
     bool isAppBlocked(const std::string& appName);
     std::string getCurrentFocusedApp() const;
+
+    void editAppTimeLimit();
 };
 
 #endif

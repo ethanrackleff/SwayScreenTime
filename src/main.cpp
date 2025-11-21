@@ -1,6 +1,7 @@
 #include "UI.h"
 #include "AppDataManager.h"
 #include "SessionTracker.h"
+#include "Blocker.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -12,7 +13,7 @@ int main(int argc, char** argv) {
     //sst help 
     //cli(argc, argv);
     
-     
+    /* 
     try {
         AppDataManager dataManager("example.db");
         std::cout << "Database initialized successfully" << std::endl;
@@ -57,11 +58,53 @@ int main(int argc, char** argv) {
     catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << std::endl; 
         return 1;
-    }
+    } */
      
 
     //TUI Version
-    AppDataManager dataManager("example.db");
+
+    try {
+        AppDataManager dataManager("example.db");
+        SessionTracker tracker(&dataManager);
+        Blocker blocker(&dataManager, &tracker);
+        AppMonitor monitor(&dataManager);
+
+        tracker.startTracking();
+        bool running = true;
+        while (running) {
+            blocker.checkAndBlock();
+            monitor.draw();
+            int ch = getch();
+            /* DEBUG Print inputted characer*/
+            if (ch != ERR) {
+                monitor.handleInput(ch);
+                refresh();
+            }
+            if (ch == 'q' || ch == 'Q') {
+                running = false;
+                clear();
+                refresh();
+                endwin();
+                break;
+                //mvprintw(0, 0, "Running: %d", running);
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        tracker.stopTracking();
+        clear();
+        refresh();
+        endwin();
+    }
+
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    //std::cout << "done running" << std::endl;
+    return 0;
+
+    /*AppDataManager dataManager("example.db");
     std::cout << "Database initialized successfully" << std::endl;
     
      auto testUsage = dataManager.getTodaysUsage();
@@ -73,5 +116,5 @@ int main(int argc, char** argv) {
     getch();
 
 
-    return 0;
+    return 0;*/
 }

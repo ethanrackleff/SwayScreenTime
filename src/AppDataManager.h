@@ -60,6 +60,8 @@ public:
     bool isAppBlocked(const std::string& appName);
     float calculateUsageLimitPercentage(const std::string& appName);
     std::vector<AppUsageData> getBlocks();
+    void setBlockEnabled(const std::string& appName, bool enabled);
+    void updateAppLimit(const std::string& appName, long long limitMs, bool enabled);
 
     //Database maintenance
     void cleanOldSessions(int daysToKeep = 30);

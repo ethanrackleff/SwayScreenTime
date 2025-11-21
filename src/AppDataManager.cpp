@@ -207,6 +207,14 @@ std::vector<AppUsageData> AppDataManager::getBlocks() {
     return blockData;
 }
 
+/*void AppDataManager::blockApp(AppUsageData app) {
+    
+}
+
+void AppDataManager::checkBlocks() {
+
+}*/
+
 //*******************************************************************
 //All Time Usage*****************************************************
 //*******************************************************************
@@ -521,4 +529,61 @@ std::map<std::string, long long> AppDataManager::getUsageTodayPercentage() {
     
     return appToPercentMap;
 }
+
+void AppDataManager::setBlockEnabled(const std::string& appName, bool enabled) {
+    std::string updateSQL = "UPDATE LIMITS SET ENABLED = " + std::to_string(enabled ? 1 : 0) + " WHERE APP = ?;";
+    sqlite3_stmt* stmt;
+    int result = sqlite3_prepare_v2(database, updateSQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare setBlockEnabled query");
+    }
+    sqlite3_bind_text(stmt, 1, appName.c_str(), -1, SQLITE_STATIC); //Fills ?
+    result = sqlite3_step(stmt); //execute
+    sqlite3_finalize(stmt); //clean up
+    if (result != SQLITE_DONE) {
+        throw std::runtime_error("Failed to update block enabled status");
+    }
+}
+
+void AppDataManager::updateAppLimit(const std::string& appName, long long limitMs, bool enabled) {
+    
+    //Check if there is already a limit
+    std::string checkSQL = "SELECT COUNT(*) FROM LIMITS WHERE APP = ?;";
+    sqlite3_stmt* checkStmt;
+    int result = sqlite3_prepare_v2(database, checkSQL.c_str(), -1, &checkStmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare updateAppLimit check query");
+    }
+    sqlite3_bind_text(checkStmt, 1, appName.c_str(), -1, SQLITE_STATIC);
+    bool exists = false;
+    if (sqlite3_step(checkStmt) == SQLITE_ROW) {
+        exists = (sqlite3_column_int(checkStmt, 0 > 0));
+    }
+    sqlite3_finalize(checkStmt);
+
+    //Update if there is already a limit. Insert if there is not a limit
+    std::string SQL;
+    if (exists) {
+        SQL = "UPDATE LIMITS SET DAILY_LIMIT_MS = ?, ENABLED = ? WHERE APP = ?;";
+    }
+    else {
+        SQL = "INSERT INTO LIMITS (DAILY_LIMIT_MS, ENABLED, APP) VALUES (?, ?, ?);";
+    }
+
+    //Execute
+    sqlite3_stmt* stmt;
+    result = sqlite3_prepare_v2(database, SQL.c_str(), -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        throw std::runtime_error("Failed to prepare updateAppLimit query");
+    }
+    sqlite3_bind_int64(stmt, 1, limitMs);
+    sqlite3_bind_int(stmt, 2, enabled ? 1 : 0);
+    sqlite3_bind_text(stmt, 3, appName.c_str(), -1, SQLITE_STATIC);
+    result = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    if (result != SQLITE_DONE) {
+        throw std::runtime_error("Failed to update app limit");
+    }
+}
+
 

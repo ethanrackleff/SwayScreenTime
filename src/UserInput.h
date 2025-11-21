@@ -1,20 +1,32 @@
 #ifndef USERINPUT_H
 #define USERINPUT_H
 
-#include <ncurses>
+#include <ncurses.h>
 #include <iostream>
+
+enum class InputAction {
+    NONE,
+    QUIT,
+    NAVIGATE_UP,
+    NAVIGATE_DOWN,
+    TOGGLE,
+    EDIT_LIMIT,
+};
 
 class UserInput {
     private:
-     
-    public:
-        int lastCh;
-        std::string lastStr;
-        UserInput();
-        //~UserInput();
+        bool inEditMode;
+        std::string editBuffer;
 
-        std::string getStr();
-        char getCh();
-}
+    public:
+        UserInput();
+        InputAction processKey(int ch);
+        void startEdit();
+        void cancelEdit();
+        bool isEditing() const;
+        bool handleEditKey(int ch);
+        std::string getEditBuffer() const;
+        void clearEditBuffer();
+};
 
 #endif

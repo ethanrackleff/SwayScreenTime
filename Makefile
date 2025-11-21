@@ -3,7 +3,7 @@ CXXFLAGS = -std=c++17 -Wall
 LIBS = -lsqlite3 -lncurses
 
 TARGET = sway-screen-time
-SOURCES = src/main.cpp src/SessionTracker.cpp src/AppDataManager.cpp src/UI.cpp
+SOURCES = src/main.cpp src/SessionTracker.cpp src/AppDataManager.cpp src/UI.cpp src/Blocker.cpp src/UserInput.cpp
 
 all: $(TARGET)
 
